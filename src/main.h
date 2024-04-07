@@ -28,6 +28,11 @@
 #define ACCELERATOR_PEDAL_PIN 15
 #define TRANSMISSION_SHIFTER_PIN 16
 
+#define HORN_PIN 10
+#define IGNITION_PIN 11
+#define START_PIN 12
+#define IGNITION_OUTPUT_PIN 13
+
 #define MIN_RAW_ACCELERATOR 395
 #define MAX_RAW_ACCELERATOR 1680
 #define MIN_RAW_BRAKE 55
@@ -47,6 +52,17 @@ uint8_t steeringSamples;
 bool steeringInitialized;
 float smoothedAcceleratorPedal;
 float smoothedTransmissionShifter;
+
+uint32_t hornMessage;
+void setHornLast();
+unsigned long lastHorn;
+unsigned long hornLength = 500;
+
+bool engine;
+bool lastEngine;
+uint32_t engineMessage;
+
+bool ignition;
 
 TwoWire lidarI2C = TwoWire(0);
 Adafruit_VL6180X brakeSensor;

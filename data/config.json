@@ -1,0 +1,10 @@
+{
+  "steering_range": 780,
+  "brake_min": 55,
+  "brake_max": 90,
+  "accelerator_min": 395,
+  "accelerator_max": 1680,
+  "reverse_thresold": 2200,
+  "low_threshold": 2000,
+  "drive_threshold": 1200
+}

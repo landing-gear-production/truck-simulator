@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <title>Freightliner Cascadia</title>
+  <link rel="icon" type="image/x-icon" href="favicon.ico">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="index.js"></script>
+</head>
+
+<body class="container mx-auto">
+  <h1 class="text-3xl font-bold">Freightliner Cascadia Simulator</h1>
+  <div class="grid grid-cols-4 gap-12">
+    <div>
+      <h2 class="text-2xl font-bold">Sensor ranges</h2>
+      <label for="steering_range">Steering</label>
+      <div class="rounded-md shadow-sm">
+        <input type="number" name="steering_range" id="steering_range" class="block w-full rounded-md border-0 py-1.5 pl-7 pr-2 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm" placeholder="0">
+      </div>
+      <label for="brake_range">Brakes</label>
+      <div class="rounded-md shadow-sm">
+        <input type="number" name="brake_min" id="brake_min" class="block w-full rounded-md border-0 py-1.5 pl-7 pr-2 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm" placeholder="0">
+      </div>
+      <div class="mt-2 rounded-md shadow-sm">
+        <input type="number" name="brake_max" id="brake_max" class="block w-full rounded-md border-0 py-1.5 pl-7 pr-2 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm" placeholder="0">
+      </div>
+      <label for="accelerator_range">Accelerator</label>
+      <div class="rounded-md shadow-sm">
+        <input type="number" name="accelerator_min" id="accelerator_min" class="block w-full rounded-md border-0 py-1.5 pl-7 pr-2 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm" placeholder="0">
+      </div>
+      <div class="mt-2 rounded-md shadow-sm">
+        <input type="number" name="accelerator_max" id="accelerator_max" class="block w-full rounded-md border-0 py-1.5 pl-7 pr-2 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm" placeholder="0">
+      </div>
+      <label for="transmission_thresholds">Transmission</label>
+      <div class="rounded-md shadow-sm">
+        <input type="number" name="reverse_threshold" id="reverse_threshold" class="block w-full rounded-md border-0 py-1.5 pl-7 pr-2 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm" placeholder="0">
+      </div>
+      <div class="mt-2 rounded-md shadow-sm">
+        <input type="number" name="low_threshold" id="low_threshold" class="block w-full rounded-md border-0 py-1.5 pl-7 pr-2 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm" placeholder="0">
+      </div>
+      <div class="mt-2 rounded-md shadow-sm">
+        <input type="number" name="drive_threshold" id="drive_threshold" class="block w-full rounded-md border-0 py-1.5 pl-7 pr-2 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm" placeholder="0">
+      </div>
+      <button id="updateSensorRangeButton" disabled="true" class="mt-2 bg-blue-100 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded" onclick="updateSensorRanges()">Update</button>
+    </div>
+    <div>
+      <h2 class="text-2xl font-bold">Raw Data</h2>
+      <h3>Raw Data</h3>
+      <label for="steering">Steering</label>
+      <p id="raw_steering"></p>
+      <label for="brakes">Brakes</label>
+      <p id="raw_brakes"></p>
+      <label for="accelerator">Accelerator</label>
+      <p id="raw_accelerator"></p>
+      <label for="accelerator">Transmission</label>
+      <p id="raw_transmission"></p>
+    </div>
+    <div>
+      <h2 class="text-2xl font-bold">Game Inputs</h2>
+      <label for="steering">Steering</label>
+      <p id="steering"></p>
+      <label for="brakes">Brakes</label>
+      <p id="brakes"></p>
+      <label for="accelerator">Accelerator</label>
+      <p id="accelerator"></p>
+      <label for="accelerator">Transmission</label>
+      <p id="transmission"></p>
+    </div>
+    <div>
+      <h2 class="text-2xl font-bold">Errors</h2>
+      <label>Brake Error</label>
+      <p id="error_brakes"></p>
+    </div>
+</body>
+
+</html>

@@ -179,6 +179,8 @@ void notifyClients() {
   doc["ranges"]["reverse_threshold"] = reverseThreshold;
   doc["ranges"]["drive_threshold"] = driveThreshold;
   doc["ranges"]["low_threshold"] = lowThreshold;
+  doc["wifi"]["ssid"] = ssid;
+  doc["wifi"]["password"] = password;
 
   std::string data;
   serializeJson(doc, data);
@@ -219,6 +221,20 @@ void handleWebSocketMessage(void *arg, uint8_t *data, size_t len) {
         serializeJson(json["data"], file);
         file.close();
       }
+    }
+    else if (strcmp(action, "setWiFi") == 0) {
+      Serial.printf("Setting WiFi\n");
+      ssid = json["data"]["ssid"].as<std::string>();
+      password = json["data"]["password"].as<std::string>();
+
+      auto file = SPIFFS.open("/wifi.txt", FILE_WRITE);
+      if (file) {
+        file.printf("%s:%s", ssid.c_str(), password.c_str());
+        file.close();
+      }
+    }
+    else if (strcmp(action, "reboot") == 0) {
+      ESP.restart();
     }
   }
 }

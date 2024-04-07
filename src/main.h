@@ -29,7 +29,7 @@
 #define TRANSMISSION_SHIFTER_PIN 16
 
 #define HORN_PIN 10
-#define IGNITION_PIN 11
+#define IGNITION_PIN 9
 #define START_PIN 12
 #define IGNITION_OUTPUT_PIN 13
 
@@ -63,6 +63,7 @@ bool lastEngine;
 uint32_t engineMessage;
 
 bool ignition;
+bool lastIgnition;
 
 TwoWire lidarI2C = TwoWire(0);
 Adafruit_VL6180X brakeSensor;

@@ -69,15 +69,24 @@ void loop()
   {
     hornMessage = 0x10;
   }
-  printf("%d\n", hornMessage);
 
   engineMessage = 0x00;
-  bool engine = digitalRead(START_PIN);
-  if (engine != lastEngine)
+  engine = digitalRead(START_PIN);
+  if (engine == HIGH && lastEngine == LOW)
   {
     engineMessage = 0x100;
   }
   lastEngine = engine;
+
+  ignition = digitalRead(IGNITION_PIN);
+  if (ignition == LOW && lastIgnition == HIGH)
+  {
+    engineMessage = 0x100;
+  }
+  lastIgnition = ignition;
+
+  printf("%d\n", engineMessage);
+
 
   memcpy(&oldState, &state, sizeof(VehicleState));
   neopixelWrite(LED_PIN, (!started || !receivingData) ? 127 : 0, receivingData ? 127 : 0, connected ? 127 : 0);

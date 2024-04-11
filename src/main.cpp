@@ -1,46 +1,40 @@
 #include "main.h"
 
 void setup() {
-  Serial.begin(115200);
+  Serial.begin(115200); 
   lidarI2C.begin(LIDAR_SDA, LIDAR_SCL);
   gamepad.begin();
-  if (!brakeSensor.begin(&lidarI2C)) {
-    printf("Failed to init VL6180X\n");
-    errorLoop();
-  }
-  // if(!FFat.begin(true)){
-  //   Serial.println("Mount Failed");
-  //   if(FFat.format(FFAT_WIPE_FULL)){
-  //       Serial.println("Format Success");
-  //     } else {
-  //       Serial.println("Format Failed");
-  //     }
-  //   errorLoop();
-  //   return;
-  // }
-  // initWiFi();
+
+  USB.begin();
+
+  initSPIFFS();
+  initWiFi();
+
+  initWebSocket();
+  initWebServer();
+
   xTaskCreatePinnedToCore(canTask, "canTask", 4096, NULL, 10, NULL, 1);
+  xTaskCreatePinnedToCore(brakeTask, "brakeTask", 2048, NULL, 10, NULL, 1);
 }
 
 void loop() {
   rawTransmissionShifter.add(analogRead(TRANSMISSION_SHIFTER_PIN));
 
   rawAcceleratorPedal.add(analogRead(ACCELERATOR_PEDAL_PIN));
-  long constrainedAcceleratorPedalPosition = constrain(rawAcceleratorPedal.get(), MIN_RAW_ACCELERATOR, MAX_RAW_ACCELERATOR);
-  state.acceleratorPedalPosition = map(constrainedAcceleratorPedalPosition, MIN_RAW_ACCELERATOR, MAX_RAW_ACCELERATOR, 0, 100);
-
-  rawBrakePedal.add(brakeSensor.readRange());
+  long constrainedAcceleratorPedalPosition = constrain(rawAcceleratorPedal.get(), minAccelerator, maxAccelerator);
+  state.acceleratorPedalPosition = map(constrainedAcceleratorPedalPosition, minAccelerator, maxAccelerator, 0, 100);
+    
   // printf("%d\n", rawBrakePedal.get());
   long constrainedBrakePedalPosition = constrain(rawBrakePedal.get(), MIN_RAW_BRAKE, MAX_RAW_BRAKE);
   state.brakePedalPosition = 100 - map(constrainedBrakePedalPosition, MIN_RAW_BRAKE, MAX_RAW_BRAKE, 0, 100);
   // printf("Brake pedal distance: %d\n", state.brakePedalPosition);
 
   uint16_t shifter = rawTransmissionShifter.get();
-  if (shifter >= 2200) {
+  if (shifter >= reverseThreshold) {
     state.transmission = TransmissionState::Reverse;
-  } else if (shifter >= 2000) {
+  } else if (shifter >= lowThreshold) {
     state.transmission = TransmissionState::Low;
-  } else if (shifter >= 1200) {
+  } else if (shifter >= driveThreshold) {
     state.transmission = TransmissionState::Drive;
   } else {
     state.transmission = TransmissionState::Neutral;
@@ -54,31 +48,190 @@ void loop() {
   gameState.accelerator = static_cast<int16_t>(map(state.acceleratorPedalPosition, 0, 100, 0, 32767));
   gameState.brake = static_cast<int16_t>(map(state.brakePedalPosition, 0, 100, 0, 32767));
 
-  // if (oldState != state) {
-    gamepad.send(
-      0, 0,
-      gameState.steering,
-      0,
-      gameState.accelerator,
-      gameState.brake,
-      0, state.transmission
-    );
+  if (now - lastPrint >= PRINT_PERIOD) {
+    printf("Steering: %.2f, %ld, %ld\n", state.steeringWheelAngle, static_cast<int16_t>(state.steeringWheelAngle), gameState.steering);
+    ws.cleanupClients();
+    notifyClients();
+    lastPrint = now;
+  }
 
-    // if (now - lastPrint > PRINT_PERIOD) {
-      // printf("Steering: %.2f, %ld, %ld\n", state.steeringWheelAngle, static_cast<int16_t>(state.steeringWheelAngle), gameState.steering);
-    //   printf("accelerator: %d, brake: %d, steering: %d\n", gameAccelerator, gameBrake, gameSteeringAngle);
-    //   // printf("Brake: %d, Accelerator: %d, Steering: %f, Current Gear: %d\n", state.brakePedalPosition, state.acceleratorPedalPosition, state.steeringWheelAngle, state.transmission);
-      // lastPrint = now;
-    // }
+  gamepad.send(
+    0, 0,
+    gameState.steering,
+    0,
+    gameState.accelerator,
+    gameState.brake,
+    0, state.transmission
+  );
+
+  // if (now - lastPrint > PRINT_PERIOD) {
+    // printf("Steering: %.2f, %ld, %ld\n", state.steeringWheelAngle, static_cast<int16_t>(state.steeringWheelAngle), gameState.steering);
+    // printf("accelerator: %d, brake: %d, steering: %d\n", gameAccelerator, gameBrake, gameSteeringAngle);
+    // printf("Brake: %d, Accelerator: %d, Steering: %f, Current Gear: %d\n", state.brakePedalPosition, state.acceleratorPedalPosition, state.steeringWheelAngle, state.transmission);
+    // lastPrint = now;
+  // }
   // }
 }
 
 void errorLoop() {
   while (true) {
     neopixelWrite(LED_PIN, 127, 0, 0);
-    delay(500);
+    delay(100);
     neopixelWrite(LED_PIN, 0, 0, 0);
-    delay(500);
+    delay(100);
+  }
+}
+
+void initSPIFFS() {
+  if (!SPIFFS.begin()) {
+    Serial.println("Cannot mount SPIFFS volume...");
+    errorLoop();
+    startupError = true;
+  }
+
+  auto file = SPIFFS.open("/wifi.txt", FILE_READ);
+  if (!file) {
+    Serial.println("Cannot open wifi.txt file...");
+    errorLoop();
+    startupError = true;
+  }
+
+  auto lines = split(file.readStringUntil('\n').c_str(), ":");
+  file.close();
+
+  ssid = lines[0];
+  password = lines[1];
+
+  auto configFile = SPIFFS.open("/config.json", FILE_READ);
+  std::string json = configFile.readString().c_str();
+
+  JsonDocument document;
+  if (!deserializeJson(document, json.c_str())) {
+    steeringRange = document["steering_range"];
+    minBrake = document["brake_min"];
+    maxBrake = document["brake_max"];
+    minAccelerator = document["accelerator_min"];
+    maxAccelerator = document["accelerator_max"];
+    reverseThreshold = document["reverse_threshold"];
+    driveThreshold = document["drive_threshold"];
+    lowThreshold = document["low_threshold"];
+  }
+}
+
+void initWiFi() {
+  WiFi.mode(WIFI_STA);
+  
+  WiFi.begin(ssid.c_str(), password.c_str());
+  Serial.printf("Trying to connect [%s] ", WiFi.macAddress().c_str());
+  while (WiFi.waitForConnectResult() != WL_CONNECTED) {
+    Serial.printf("WiFiStatus: %d\r\n", WiFi.status());
+    neopixelWrite(LED_PIN, 0, 0, 127);
+    delay(100);
+    neopixelWrite(LED_PIN, 0, 0, 0);
+    delay(100);
+  }
+}
+
+String templateProcessor(const String &var) {
+  if (var == "IP_ADDRESS") {
+    return WiFi.localIP().toString();
+  }
+  return String();
+}
+
+void onRootRequest(AsyncWebServerRequest *request) {
+  request->send(SPIFFS, "/index.html", "text/html", false, templateProcessor);
+}
+
+void initWebServer() {
+  server.on("/", onRootRequest);
+  server.serveStatic("/", SPIFFS, "/").setDefaultFile("index.html");
+  server.begin();
+}
+
+void initWebSocket() {
+  ws.onEvent(onEvent);
+  server.addHandler(&ws);
+}
+
+
+void notifyClients() {
+  JsonDocument doc;
+  doc["type"] = "data";
+  doc["input"]["steering"] = state.steeringWheelAngle;
+  doc["input"]["accelerator"] = state.acceleratorPedalPosition;
+  doc["input"]["brake"] = state.brakePedalPosition;
+  doc["input"]["transmission"] = state.transmission;
+  doc["sensors"]["brake"] = rawBrakePedal.get();
+  doc["sensors"]["accelerator"] = rawAcceleratorPedal.get();
+  doc["sensors"]["transmission"] = rawTransmissionShifter.get();
+  doc["sensors"]["steering"] = state.steeringWheelAngle;
+  doc["errors"]["brake"] = brakeSensorError;
+  doc["ranges"]["brake_min"] = minBrake;
+  doc["ranges"]["brake_max"] = maxBrake;
+  doc["ranges"]["accelerator_min"] = minAccelerator;
+  doc["ranges"]["accelerator_max"] = maxAccelerator;
+  doc["ranges"]["steering_range"] = steeringRange;
+  doc["ranges"]["reverse_threshold"] = reverseThreshold;
+  doc["ranges"]["drive_threshold"] = driveThreshold;
+  doc["ranges"]["low_threshold"] = lowThreshold;
+  doc["wifi"]["ssid"] = ssid;
+  doc["wifi"]["password"] = password;
+
+  std::string data;
+  serializeJson(doc, data);
+  ws.textAll(data.c_str());
+}
+
+void handleWebSocketMessage(void *arg, uint8_t *data, size_t len) {
+  AwsFrameInfo *info = (AwsFrameInfo*)arg;
+  if (info->final && info->index == 0 && info->len == len && info->opcode == WS_TEXT) {
+    JsonDocument json;
+    DeserializationError err = deserializeJson(json, data);
+    if (err) {
+      Serial.print(F("deserializeJson() failed with code "));
+      Serial.println(err.c_str());
+      return;
+    }
+
+    const char *action = json["action"];
+    if (strcmp(action, "calibrateBrakes") == 0) {
+
+    } 
+    else if (strcmp(action, "calibrateAccelerator") == 0) {
+      
+    }
+    else if (strcmp(action, "setRanges") == 0) {
+      Serial.printf("Setting ranges\n");
+      steeringRange = json["data"]["steering_range"].as<long>();
+      minBrake = json["data"]["brake_min"].as<long>();;
+      maxBrake = json["data"]["brake_max"].as<long>();;
+      minAccelerator = json["data"]["accelerator_min"].as<long>();;
+      maxAccelerator = json["data"]["accelerator_max"].as<long>();;
+      reverseThreshold = json["data"]["reverse_threshold"].as<long>();;
+      driveThreshold = json["data"]["drive_threshold"].as<long>();;
+      lowThreshold = json["data"]["low_threshold"].as<long>();;
+
+      auto file = SPIFFS.open("/config.json", FILE_WRITE);
+      if (file) {
+        serializeJson(json["data"], file);
+        file.close();
+      }
+    }
+    else if (strcmp(action, "setWiFi") == 0) {
+      Serial.printf("Setting WiFi\n");
+      ssid = json["data"]["ssid"].as<std::string>();
+      password = json["data"]["password"].as<std::string>();
+
+      auto file = SPIFFS.open("/wifi.txt", FILE_WRITE);
+      if (file) {
+        file.printf("%s:%s", ssid.c_str(), password.c_str());
+        file.close();
+      }
+    }
+    else if (strcmp(action, "reboot") == 0) {
+      ESP.restart();
+    }
   }
 }
 
@@ -242,6 +395,23 @@ void canTask(void* args) {
       receivingData = false;
     }
 
+    delay(5);
+  }
+
+  vTaskDelete(NULL);
+}
+
+void brakeTask(void* args) {
+  if (!brakeSensor.begin(&lidarI2C)) {
+    printf("Failed to init VL6180X\n");
+    startupError = true;
+    brakeSensorError = true;
+  }
+  else
+    printf("Brake sensor initialized\n");
+
+  for (;;) {
+    rawBrakePedal.add(brakeSensor.readRange());
     delay(5);
   }
 

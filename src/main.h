@@ -4,6 +4,7 @@
 #include "data.h"
 #include "j1939.h"
 #include "driver/twai.h"
+#include "USB.h"
 #include "USBHIDGamepad.h"
 #include "USBHIDVehicleGamepad.h"
 #include "MovingAverage.h"
@@ -61,10 +62,15 @@ static GameState gameState;
 bool initValues = false;
 static bool started = false, receivingData = false, connected;
 
+bool startupError = false;
+bool brakeSensorError = false;
+bool wifiConnected = false;
+
 USBHIDVehicleGamepad gamepad;
 
 void errorLoop();
 void canTask(void *args);
+void brakeTask(void *args);
 
 // const char *WIFI_SSID = "BLDG269 Fios";
 // const char *WIFI_PASS = "fish1234";

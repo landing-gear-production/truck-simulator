@@ -13,7 +13,7 @@ struct GameState {
   int16_t accelerator;
   int16_t brake;
   int16_t steering;
-  uint32_t transmission;
+  uint32_t buttons;
 };
 
 enum SteeringDirection {

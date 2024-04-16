@@ -4,7 +4,7 @@ void setup() {
   Serial.begin(115200); 
   lidarI2C.begin(LIDAR_SDA, LIDAR_SCL);
   gamepad.begin();
-
+  USB.productName("Freightliner Cascadia");
   USB.begin();
 
   initSPIFFS();
@@ -12,6 +12,14 @@ void setup() {
 
   initWebSocket();
   initWebServer();
+
+  pinMode(HORN_PIN, INPUT_PULLDOWN);
+  pinMode(IGNITION_PIN, INPUT_PULLDOWN);
+  pinMode(START_PIN, INPUT_PULLDOWN);
+
+  attachInterrupt(digitalPinToInterrupt(HORN_PIN), setHornLast, CHANGE);
+  attachInterrupt(digitalPinToInterrupt(START_PIN), setEngineLast, RISING);
+  attachInterrupt(digitalPinToInterrupt(IGNITION_PIN), setEngineLast, FALLING);
 
   xTaskCreatePinnedToCore(canTask, "canTask", 4096, NULL, 10, NULL, 1);
   xTaskCreatePinnedToCore(brakeTask, "brakeTask", 2048, NULL, 10, NULL, 1);
@@ -25,8 +33,8 @@ void loop() {
   state.acceleratorPedalPosition = map(constrainedAcceleratorPedalPosition, minAccelerator, maxAccelerator, 0, 100);
     
   // printf("%d\n", rawBrakePedal.get());
-  long constrainedBrakePedalPosition = constrain(rawBrakePedal.get(), MIN_RAW_BRAKE, MAX_RAW_BRAKE);
-  state.brakePedalPosition = 100 - map(constrainedBrakePedalPosition, MIN_RAW_BRAKE, MAX_RAW_BRAKE, 0, 100);
+  long constrainedBrakePedalPosition = constrain(rawBrakePedal.get(), minBrake, maxBrake);
+  state.brakePedalPosition = 100 - map(constrainedBrakePedalPosition, minBrake, maxBrake, 0, 100);
   // printf("Brake pedal distance: %d\n", state.brakePedalPosition);
 
   uint16_t shifter = rawTransmissionShifter.get();
@@ -40,16 +48,29 @@ void loop() {
     state.transmission = TransmissionState::Neutral;
   }
 
+  hornMessage = 0x00;
+  if (millis() - lastHorn <= hornLength)
+  {
+    hornMessage = 0x10;
+  }
+
+  engineMessage = 0x00;
+  if (millis() - lastEngine <= engineLength)
+  {
+    engineMessage = 0x20;
+  }
+
   memcpy(&oldState, &state, sizeof(VehicleState));
   neopixelWrite(LED_PIN, (!started || !receivingData) ? 127 : 0, receivingData ? 127 : 0, connected ? 127 : 0);
   auto now = millis();
 
-  gameState.steering = static_cast<int16_t>(map(static_cast<long>(state.steeringWheelAngle), -STEERING_RANGE, STEERING_RANGE, -32767, 32767));
+  double constrainedScaledSteeringAngle = constrain(state.steeringWheelAngle * steeringRange, -steeringRange, steeringRange);
+  gameState.steering = static_cast<int16_t>(map(static_cast<long>(constrainedScaledSteeringAngle), -steeringRange, steeringRange, -32767, 32767));
   gameState.accelerator = static_cast<int16_t>(map(state.acceleratorPedalPosition, 0, 100, 0, 32767));
   gameState.brake = static_cast<int16_t>(map(state.brakePedalPosition, 0, 100, 0, 32767));
+  gameState.buttons = state.transmission | hornMessage | engineMessage;
 
   if (now - lastPrint >= PRINT_PERIOD) {
-    printf("Steering: %.2f, %ld, %ld\n", state.steeringWheelAngle, static_cast<int16_t>(state.steeringWheelAngle), gameState.steering);
     ws.cleanupClients();
     notifyClients();
     lastPrint = now;
@@ -61,7 +82,7 @@ void loop() {
     0,
     gameState.accelerator,
     gameState.brake,
-    0, state.transmission
+    0, gameState.buttons
   );
 
   // if (now - lastPrint > PRINT_PERIOD) {
@@ -108,6 +129,7 @@ void initSPIFFS() {
   JsonDocument document;
   if (!deserializeJson(document, json.c_str())) {
     steeringRange = document["steering_range"];
+    steeringScale = document["steering_scale"];
     minBrake = document["brake_min"];
     maxBrake = document["brake_max"];
     minAccelerator = document["accelerator_min"];
@@ -119,16 +141,12 @@ void initSPIFFS() {
 }
 
 void initWiFi() {
-  WiFi.mode(WIFI_STA);
-  
-  WiFi.begin(ssid.c_str(), password.c_str());
-  Serial.printf("Trying to connect [%s] ", WiFi.macAddress().c_str());
-  while (WiFi.waitForConnectResult() != WL_CONNECTED) {
-    Serial.printf("WiFiStatus: %d\r\n", WiFi.status());
-    neopixelWrite(LED_PIN, 0, 0, 127);
-    delay(100);
-    neopixelWrite(LED_PIN, 0, 0, 0);
-    delay(100);
+  WiFi.softAP(ssid.c_str(), password.c_str());
+
+  if (!MDNS.begin("cascadia")) {
+    Serial.println("Error setting up MDNS responder!");
+    errorLoop();
+    startupError = true;
   }
 }
 
@@ -162,6 +180,8 @@ void notifyClients() {
   doc["input"]["accelerator"] = state.acceleratorPedalPosition;
   doc["input"]["brake"] = state.brakePedalPosition;
   doc["input"]["transmission"] = state.transmission;
+  doc["input"]["horn"] = hornMessage;
+  doc["input"]["engine"] = engineMessage;
   doc["sensors"]["brake"] = rawBrakePedal.get();
   doc["sensors"]["accelerator"] = rawAcceleratorPedal.get();
   doc["sensors"]["transmission"] = rawTransmissionShifter.get();
@@ -235,24 +255,38 @@ void handleWebSocketMessage(void *arg, uint8_t *data, size_t len) {
   }
 }
 
-// void initWiFi() {
-//   WiFi.mode(WIFI_STA);
-//   WiFi.begin(WIFI_SSID, WIFI_PASS);
-//   Serial.printf("Trying to connect [%s] ", WiFi.macAddress().c_str());
-//   while (WiFi.status() != WL_CONNECTED) {
-//     Serial.print(".");
-//     neopixelWrite(0, 0, 127);
-//     delay(500);
-//     neopixelWrite(0, 0, 0);
-//     delay(500);
-//   }
-//   Serial.printf(" %s\n", WiFi.localIP().toString().c_str());
-// }
+void setHornLast() {
+  lastHorn = millis();
+}
 
-// void initWebServer() {
-//   server.serveStatic("/", SPIFFS, "/").setDefaultFile("index.html");
-//   server.begin();
-// }
+void setEngineLast() {
+  if (lastEngine + engineBufferLength <= millis()) {
+    lastEngine = millis();
+  }
+}
+
+void onEvent(
+  AsyncWebSocket       *server,
+  AsyncWebSocketClient *client,
+  AwsEventType          type,
+  void                 *arg,
+  uint8_t              *data,
+  size_t                len) {
+
+  switch (type) {
+    case WS_EVT_CONNECT:
+      Serial.printf("WebSocket client #%u connected from %s\n", client->id(), client->remoteIP().toString().c_str());
+      break;
+    case WS_EVT_DISCONNECT:
+      Serial.printf("WebSocket client #%u disconnected\n", client->id());
+      break;
+    case WS_EVT_DATA:
+      handleWebSocketMessage(arg, data, len);
+    case WS_EVT_PONG:
+    case WS_EVT_ERROR:
+      break;
+  }
+}
 
 void setupCAN() {
   twai_general_config_t g_config = TWAI_GENERAL_CONFIG_DEFAULT(CAN_TX_PIN, CAN_RX_PIN, TWAI_MODE_NORMAL);
@@ -347,7 +381,7 @@ void onData(twai_message_t *message) {
 
       // all of this hackiness due to rollover issues in the Cascadia steering reports
       // data jumps at around 740 degrees (maybe a parsing issue)?
-      if (degs >= -STEERING_RANGE && degs <= STEERING_RANGE) {
+      if (degs >= -steeringRange && degs <= steeringRange) {
         // if (state.steeringWheelAngle == 0 )
         if (!steeringInitialized) {
           lastSteering[steeringSamples] = degs;
@@ -362,7 +396,7 @@ void onData(twai_message_t *message) {
           SteeringDirection nextDirection = getSteeringDirection (lastSteering[1], degs);
 
           if (nextDirection != SteeringDirection::DirectionUnknown && lastDirection != nextDirection) {
-            if (abs(lastSteering[1] - degs) < STEERING_RANGE) {
+            if (abs(lastSteering[1] - degs) < steeringRange) {
               state.steeringWheelAngle = degs;
               lastSteering[0] = lastSteering[1];
               lastSteering[1] = degs;
@@ -412,6 +446,8 @@ void brakeTask(void* args) {
 
   for (;;) {
     rawBrakePedal.add(brakeSensor.readRange());
+    // printf("Brake pedal distance: %d, error; %s\n", rawBrakePedal.get(), brakeSensorError ? "true" : "false");
+    // delay(95);
     delay(5);
   }
 

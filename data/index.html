@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html class="text-gray-900 bg-gray-100 font-serif m-4">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <title>Freightliner Cascadia</title>
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="index.js"></script>
+  </head>
+
+  <body class="container mx-auto px-4">
+    <div class="flex flex-col justify-center">
+      <h1 class="text-3xl font-bold self-center">Freightliner Cascadia Simulator</h1>
+      <button id="editButton" onclick="toggleEditMode()" class="m-2 bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded self-center">Enter Edit Mode</button>
+      <div class="grid grid-cols-2 gap-12">
+        <div>
+          <h2 class="text-2xl font-bold">Sensor ranges</h2>
+          <label for="steering_range">Steering</label>
+          <div class="relative rounded-md shadow-sm my-2">
+            <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+              <span class="text-gray-500 sm:text-sm">Range</span>
+            </div>
+            <input type="number" name="steering_range" id="steering_range" class="block w-full rounded-md border-0 py-1.5 pl-20 pr-2 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm" placeholder="0">
+          </div>
+          <div class="rounded-md shadow-sm my-2">
+            <div class="pointer-events-none inset-y-0 left-0 flex items-center">
+              <p ID="steering_scale_label" class="text-gray-500 sm:text-sm">Scale</p>
+            </div>
+            <input type="range" min="0.1" max="3.0" step="0.05" name="steering_scale" id="steering_scale" class="block w-full rounded-md border-0 py-1.5 pl-20 pr-2 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm" placeholder="1.0" oninput="updateSteeringScale(this.value)" onchange="updateSteeringScale(this.value)">
+          </div>
+          <label for="brake_range">Brakes</label>
+          <div class="relative rounded-md shadow-sm my-2">
+            <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+              <span class="text-gray-500 sm:text-sm">Min</span>
+            </div>
+            <input type="number" name="brake_min" id="brake_min" class="block w-full rounded-md border-0 py-1.5 pl-20 pr-2 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm" placeholder="0">
+          </div>
+          <div class="relative mt-2 rounded-md shadow-sm my-2">
+            <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+              <span class="text-gray-500 sm:text-sm">Max</span>
+            </div>
+            <input type="number" name="brake_max" id="brake_max" class="block w-full rounded-md border-0 py-1.5 pl-20 pr-2 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm" placeholder="0">
+          </div>
+          <label for="accelerator_range">Accelerator</label>
+          <div class="relative mt-2 rounded-md shadow-sm my-2">
+            <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+              <span class="text-gray-500 sm:text-sm">Min</span>
+            </div>
+            <input type="number" name="accelerator_min" id="accelerator_min" class="block w-full rounded-md border-0 py-1.5 pl-20 pr-2 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm" placeholder="0">
+          </div>
+          <div class="relative mt-2 rounded-md shadow-sm my-2">
+            <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+              <span class="text-gray-500 sm:text-sm">Max</span>
+            </div>
+            <input type="number" name="accelerator_max" id="accelerator_max" class="block w-full rounded-md border-0 py-1.5 pl-20 pr-2 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm" placeholder="0">
+          </div>
+          <label for="transmission_thresholds">Transmission</label>
+          <div class="relative rounded-md shadow-sm my-2">
+            <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+              <span class="text-gray-500 sm:text-sm">Reverse</span>
+            </div>
+            <input type="number" name="reverse_threshold" id="reverse_threshold" class="block w-full rounded-md border-0 py-1.5 pl-20 pr-2 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm" placeholder="0">
+          </div>
+          <div class="relative mt-2 rounded-md shadow-sm my-2">
+            <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+              <span class="text-gray-500 sm:text-sm">Low</span>
+            </div>
+            <input type="number" name="low_threshold" id="low_threshold" class="block w-full rounded-md border-0 py-1.5 pl-20 pr-2 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm" placeholder="0">
+          </div>
+          <div class="relative mt-2 rounded-md shadow-sm my-2">
+            <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+              <span class="text-gray-500 sm:text-sm">Drive</span>
+            </div>
+            <input type="number" name="drive_threshold" id="drive_threshold" class="block w-full rounded-md border-0 py-1.5 pl-20 pr-2 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm" placeholder="0">
+          </div>
+          <div id="sensorActions">
+            <button id="updateSensorRangeButton" disabled="true" class="mt-2 bg-blue-100 text-white font-bold py-2 px-4 rounded" onclick="updateSensorRanges()">Update</button>
+          </div>
+        </div>
+        <div>
+          <div class="mb-2">
+            <h2 class="text-2xl font-bold">Raw Data</h2>
+            <label for="steering">Steering</label>
+            <p id="raw_steering"></p>
+            <label for="brakes">Brakes</label>
+            <p id="raw_brake"></p>
+            <label for="accelerator">Accelerator</label>
+            <p id="raw_accelerator"></p>
+            <label for="accelerator">Transmission</label>
+            <p id="raw_transmission"></p>
+          </div>
+
+          <div class="flex flex-col justify-stretch">
+            <h2 class="text-2xl font-bold">Game Inputs</h2>
+            <label for="steering">Steering</label>
+            <div class="border-slate-300 border rounded-md h-4 my-2 flex relative">
+              <div id="steering" class="bg-orange-300 border rounded-md absolute" style="top: 0; bottom: 0; left:50%;" role="progressbar"></div>
+            </div>
+            <label for="brakes">Brakes</label>
+            <div class="border-slate-300 border rounded-md h-4 my-2 flex">
+              <div id="brakes" class="bg-red-300 border rounded-md" role="progressbar"></div>
+            </div>
+            <label for="accelerator">Accelerator</label>
+            <div class="border-slate-300 border rounded-md h-4 my-2 flex">
+              <div id="accelerator" class="bg-blue-300 border rounded-md" role="progressbar"></div>
+            </div>
+            <label for="accelerator">Transmission</label>
+            <p id="transmission"></p>
+          </div>
+
+          <div class="my-2">
+            <h2 class="text-2xl font-bold">Errors</h2>
+            <label>Brake Error</label>
+            <p id="error_brakes"></p>
+          </div>
+        </div>
+      </div>
+      <div class="mt-4 grid grid-cols-4 gap-12">
+        <div>
+          <h2 class="text-2xl font-bold">WiFi</h2>
+          <label>SSID</label>
+          <div class="rounded-md shadow-sm">
+            <input type="text" name="ssid" id="ssid" class="block w-full rounded-md border-0 py-1.5 pl-7 pr-2 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm">
+          </div>
+          <label>Password</label>
+          <div class="mt-2 rounded-md shadow-sm">
+            <input type="text" name="password" id="password" class="block w-full rounded-md border-0 py-1.5 pl-7 pr-2 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm">
+          </div>
+          <div id="wifiActions">
+            <button id="updateWiFiButton" disabled="true" class="mt-2 bg-blue-100 text-white font-bold py-2 px-4 rounded" onclick="updateWiFi()">Update</button>
+            <button id="rebootButton" disabled="true" class="mt-2 bg-blue-100 text-white font-bold py-2 px-4 rounded" onclick="reboot()">Reboot</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

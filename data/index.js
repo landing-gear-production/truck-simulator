@@ -175,6 +175,9 @@ function updateSteeringProgress(value) {
     element.style.left = '50%';
     element.style.right = `${pixelOffset}px`
   }
+
+  const valueElement = document.getElementById('steering_value')
+  valueElement.innerText = `${value.toFixed(0)}°`
 }
 
 function updateAcceleratorProgress(value) {
@@ -182,6 +185,9 @@ function updateAcceleratorProgress(value) {
   const parent = element.parentElement
   const pixelOffset = value / 100 * parent.clientWidth
   element.style.width = `${pixelOffset}px`
+
+  const valueElement = document.getElementById('accelerator_value')
+  valueElement.innerText = value
 }
 
 function updateBrakeProgress(value) {
@@ -189,6 +195,9 @@ function updateBrakeProgress(value) {
   const parent = element.parentElement
   const pixelOffset = value / 100 * parent.clientWidth
   element.style.width = `${pixelOffset}px`
+
+  const valueElement = document.getElementById('brakes_value')
+  valueElement.innerText = value
 }
 
 function updateTransmission(value) {

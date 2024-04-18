@@ -22,7 +22,7 @@ void setup() {
   attachInterrupt(digitalPinToInterrupt(IGNITION_PIN), setEngineLast, FALLING);
 
   xTaskCreatePinnedToCore(canTask, "canTask", 4096, NULL, 10, NULL, 1);
-  xTaskCreatePinnedToCore(brakeTask, "brakeTask", 2048, NULL, 10, NULL, 1);
+  xTaskCreatePinnedToCore(brakeTask, "brakeTask", 4096, NULL, 10, NULL, 1);
 }
 
 void loop() {
@@ -64,7 +64,7 @@ void loop() {
   neopixelWrite(LED_PIN, (!started || !receivingData) ? 127 : 0, receivingData ? 127 : 0, connected ? 127 : 0);
   auto now = millis();
 
-  double constrainedScaledSteeringAngle = constrain(state.steeringWheelAngle * steeringRange, -steeringRange, steeringRange);
+  double constrainedScaledSteeringAngle = constrain(state.steeringWheelAngle * steeringScale, -steeringRange, steeringRange);
   gameState.steering = static_cast<int16_t>(map(static_cast<long>(constrainedScaledSteeringAngle), -steeringRange, steeringRange, -32767, 32767));
   gameState.accelerator = static_cast<int16_t>(map(state.acceleratorPedalPosition, 0, 100, 0, 32767));
   gameState.brake = static_cast<int16_t>(map(state.brakePedalPosition, 0, 100, 0, 32767));
@@ -176,7 +176,7 @@ void initWebSocket() {
 void notifyClients() {
   JsonDocument doc;
   doc["type"] = "data";
-  doc["input"]["steering"] = state.steeringWheelAngle;
+  doc["input"]["steering"] = state.steeringWheelAngle * steeringScale;
   doc["input"]["accelerator"] = state.acceleratorPedalPosition;
   doc["input"]["brake"] = state.brakePedalPosition;
   doc["input"]["transmission"] = state.transmission;
@@ -224,6 +224,7 @@ void handleWebSocketMessage(void *arg, uint8_t *data, size_t len) {
     else if (strcmp(action, "setRanges") == 0) {
       Serial.printf("Setting ranges\n");
       steeringRange = json["data"]["steering_range"].as<long>();
+      steeringScale = json["data"]["steering_scale"].as<double>();
       minBrake = json["data"]["brake_min"].as<long>();;
       maxBrake = json["data"]["brake_max"].as<long>();;
       minAccelerator = json["data"]["accelerator_min"].as<long>();;

@@ -1,6 +1,6 @@
 {
   "steering_range": 780,
-  "steering_scale": 1.0,
+  "steering_scale": 10.0,
   "brake_min": 23,
   "brake_max": 62,
   "accelerator_min": 395,

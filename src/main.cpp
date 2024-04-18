@@ -17,7 +17,8 @@ void setup() {
   pinMode(IGNITION_PIN, INPUT_PULLDOWN);
   pinMode(START_PIN, INPUT_PULLDOWN);
 
-  attachInterrupt(digitalPinToInterrupt(HORN_PIN), setHornLast, CHANGE);
+  attachInterrupt(digitalPinToInterrupt(HORN_PIN), setHornFalse, FALLING);
+  attachInterrupt(digitalPinToInterrupt(HORN_PIN), setHornTrue, RISING);
   attachInterrupt(digitalPinToInterrupt(START_PIN), setEngineLast, RISING);
   attachInterrupt(digitalPinToInterrupt(IGNITION_PIN), setEngineLast, FALLING);
 
@@ -38,21 +39,24 @@ void loop() {
   // printf("Brake pedal distance: %d\n", state.brakePedalPosition);
 
   uint16_t shifter = rawTransmissionShifter.get();
-  if (shifter >= reverseThreshold) {
+  if (shifter >= reverseThreshold)
+  {
     state.transmission = TransmissionState::Reverse;
-  } else if (shifter >= lowThreshold) {
+  }
+  else if (shifter >= lowThreshold)
+  {
     state.transmission = TransmissionState::Low;
-  } else if (shifter >= driveThreshold) {
+  }
+  else if (shifter >= driveThreshold)
+  {
     state.transmission = TransmissionState::Drive;
-  } else {
+  }
+  else
+  {
     state.transmission = TransmissionState::Neutral;
   }
 
-  hornMessage = 0x00;
-  if (millis() - lastHorn <= hornLength)
-  {
-    hornMessage = 0x10;
-  }
+  hornMessage = horn ? 0x10 : 0x00;
 
   engineMessage = 0x00;
   if (millis() - lastEngine <= engineLength)
@@ -111,7 +115,8 @@ void initSPIFFS() {
   }
 
   auto file = SPIFFS.open("/wifi.txt", FILE_READ);
-  if (!file) {
+  if (!file)
+  {
     Serial.println("Cannot open wifi.txt file...");
     errorLoop();
     startupError = true;
@@ -127,7 +132,8 @@ void initSPIFFS() {
   std::string json = configFile.readString().c_str();
 
   JsonDocument document;
-  if (!deserializeJson(document, json.c_str())) {
+  if (!deserializeJson(document, json.c_str()))
+  {
     steeringRange = document["steering_range"];
     steeringScale = document["steering_scale"];
     minBrake = document["brake_min"];
@@ -150,30 +156,35 @@ void initWiFi() {
   }
 }
 
-String templateProcessor(const String &var) {
-  if (var == "IP_ADDRESS") {
+String templateProcessor(const String &var)
+{
+  if (var == "IP_ADDRESS")
+  {
     return WiFi.localIP().toString();
   }
   return String();
 }
 
-void onRootRequest(AsyncWebServerRequest *request) {
+void onRootRequest(AsyncWebServerRequest *request)
+{
   request->send(SPIFFS, "/index.html", "text/html", false, templateProcessor);
 }
 
-void initWebServer() {
+void initWebServer()
+{
   server.on("/", onRootRequest);
   server.serveStatic("/", SPIFFS, "/").setDefaultFile("index.html");
   server.begin();
 }
 
-void initWebSocket() {
+void initWebSocket()
+{
   ws.onEvent(onEvent);
   server.addHandler(&ws);
 }
 
-
-void notifyClients() {
+void notifyClients()
+{
   JsonDocument doc;
   doc["type"] = "data";
   doc["input"]["steering"] = state.steeringWheelAngle * steeringScale;
@@ -203,25 +214,29 @@ void notifyClients() {
   ws.textAll(data.c_str());
 }
 
-void handleWebSocketMessage(void *arg, uint8_t *data, size_t len) {
-  AwsFrameInfo *info = (AwsFrameInfo*)arg;
-  if (info->final && info->index == 0 && info->len == len && info->opcode == WS_TEXT) {
+void handleWebSocketMessage(void *arg, uint8_t *data, size_t len)
+{
+  AwsFrameInfo *info = (AwsFrameInfo *)arg;
+  if (info->final && info->index == 0 && info->len == len && info->opcode == WS_TEXT)
+  {
     JsonDocument json;
     DeserializationError err = deserializeJson(json, data);
-    if (err) {
+    if (err)
+    {
       Serial.print(F("deserializeJson() failed with code "));
       Serial.println(err.c_str());
       return;
     }
 
     const char *action = json["action"];
-    if (strcmp(action, "calibrateBrakes") == 0) {
-
-    } 
-    else if (strcmp(action, "calibrateAccelerator") == 0) {
-      
+    if (strcmp(action, "calibrateBrakes") == 0)
+    {
     }
-    else if (strcmp(action, "setRanges") == 0) {
+    else if (strcmp(action, "calibrateAccelerator") == 0)
+    {
+    }
+    else if (strcmp(action, "setRanges") == 0)
+    {
       Serial.printf("Setting ranges\n");
       steeringRange = json["data"]["steering_range"].as<long>();
       steeringScale = json["data"]["steering_scale"].as<double>();
@@ -234,58 +249,72 @@ void handleWebSocketMessage(void *arg, uint8_t *data, size_t len) {
       lowThreshold = json["data"]["low_threshold"].as<long>();;
 
       auto file = SPIFFS.open("/config.json", FILE_WRITE);
-      if (file) {
+      if (file)
+      {
         serializeJson(json["data"], file);
         file.close();
       }
     }
-    else if (strcmp(action, "setWiFi") == 0) {
+    else if (strcmp(action, "setWiFi") == 0)
+    {
       Serial.printf("Setting WiFi\n");
       ssid = json["data"]["ssid"].as<std::string>();
       password = json["data"]["password"].as<std::string>();
 
       auto file = SPIFFS.open("/wifi.txt", FILE_WRITE);
-      if (file) {
+      if (file)
+      {
         file.printf("%s:%s", ssid.c_str(), password.c_str());
         file.close();
       }
     }
-    else if (strcmp(action, "reboot") == 0) {
+    else if (strcmp(action, "reboot") == 0)
+    {
       ESP.restart();
     }
   }
 }
 
-void setHornLast() {
-  lastHorn = millis();
+void setHornTrue()
+{
+  horn = true;
 }
 
-void setEngineLast() {
-  if (lastEngine + engineBufferLength <= millis()) {
+void setHornFalse()
+{
+  horn = false;
+}
+
+void setEngineLast()
+{
+  if (lastEngine + engineBufferLength <= millis())
+  {
     lastEngine = millis();
   }
 }
 
 void onEvent(
-  AsyncWebSocket       *server,
-  AsyncWebSocketClient *client,
-  AwsEventType          type,
-  void                 *arg,
-  uint8_t              *data,
-  size_t                len) {
+    AsyncWebSocket *server,
+    AsyncWebSocketClient *client,
+    AwsEventType type,
+    void *arg,
+    uint8_t *data,
+    size_t len)
+{
 
-  switch (type) {
-    case WS_EVT_CONNECT:
-      Serial.printf("WebSocket client #%u connected from %s\n", client->id(), client->remoteIP().toString().c_str());
-      break;
-    case WS_EVT_DISCONNECT:
-      Serial.printf("WebSocket client #%u disconnected\n", client->id());
-      break;
-    case WS_EVT_DATA:
-      handleWebSocketMessage(arg, data, len);
-    case WS_EVT_PONG:
-    case WS_EVT_ERROR:
-      break;
+  switch (type)
+  {
+  case WS_EVT_CONNECT:
+    Serial.printf("WebSocket client #%u connected from %s\n", client->id(), client->remoteIP().toString().c_str());
+    break;
+  case WS_EVT_DISCONNECT:
+    Serial.printf("WebSocket client #%u disconnected\n", client->id());
+    break;
+  case WS_EVT_DATA:
+    handleWebSocketMessage(arg, data, len);
+  case WS_EVT_PONG:
+  case WS_EVT_ERROR:
+    break;
   }
 }
 
@@ -421,7 +450,8 @@ void canTask(void* args) {
     // oldFeedbackData = feedbackData;
     twai_message_t message; 
 
-    if (twai_receive(&message, 100) == ESP_OK) {
+    if (twai_receive(&message, 100) == ESP_OK)
+    {
       receivingData = true;
       onData(&message);
     }

@@ -53,10 +53,10 @@ bool steeringInitialized;
 float smoothedAcceleratorPedal;
 float smoothedTransmissionShifter;
 
+bool horn = false;
 uint32_t hornMessage;
-void setHornLast();
-unsigned long lastHorn;
-unsigned long hornLength = 500;
+void setHornFalse();
+void setHornTrue();
 
 uint32_t engineMessage;
 void setEngineLast();

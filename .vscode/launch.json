@@ -12,13 +12,9 @@
             "type": "platformio-debug",
             "request": "launch",
             "name": "PIO Debug",
-            "executable": "C:/Users/Nishanth/projects/landing-gear/truck-simulator/.pio/build/cascadia/firmware.elf",
+            "executable": "/Users/danielzhu/truck-simulator/.pio/build/cascadia/firmware.elf",
             "projectEnvName": "cascadia",
-<<<<<<< Updated upstream
-            "toolchainBinDir": "C:/Users/Nishanth/.platformio/packages/toolchain-xtensa-esp32s3/bin",
-=======
             "toolchainBinDir": "/Users/danielzhu/.platformio/packages/toolchain-xtensa-esp32s3@8.4.0+2021r2-patch5/bin",
->>>>>>> Stashed changes
             "internalConsoleOptions": "openOnSessionStart",
             "preLaunchTask": {
                 "type": "PlatformIO",
@@ -29,26 +25,18 @@
             "type": "platformio-debug",
             "request": "launch",
             "name": "PIO Debug (skip Pre-Debug)",
-            "executable": "C:/Users/Nishanth/projects/landing-gear/truck-simulator/.pio/build/cascadia/firmware.elf",
+            "executable": "/Users/danielzhu/truck-simulator/.pio/build/cascadia/firmware.elf",
             "projectEnvName": "cascadia",
-<<<<<<< Updated upstream
-            "toolchainBinDir": "C:/Users/Nishanth/.platformio/packages/toolchain-xtensa-esp32s3/bin",
-=======
             "toolchainBinDir": "/Users/danielzhu/.platformio/packages/toolchain-xtensa-esp32s3@8.4.0+2021r2-patch5/bin",
->>>>>>> Stashed changes
             "internalConsoleOptions": "openOnSessionStart"
         },
         {
             "type": "platformio-debug",
             "request": "launch",
             "name": "PIO Debug (without uploading)",
-            "executable": "C:/Users/Nishanth/projects/landing-gear/truck-simulator/.pio/build/cascadia/firmware.elf",
+            "executable": "/Users/danielzhu/truck-simulator/.pio/build/cascadia/firmware.elf",
             "projectEnvName": "cascadia",
-<<<<<<< Updated upstream
-            "toolchainBinDir": "C:/Users/Nishanth/.platformio/packages/toolchain-xtensa-esp32s3/bin",
-=======
             "toolchainBinDir": "/Users/danielzhu/.platformio/packages/toolchain-xtensa-esp32s3@8.4.0+2021r2-patch5/bin",
->>>>>>> Stashed changes
             "internalConsoleOptions": "openOnSessionStart",
             "loadMode": "manual"
         }

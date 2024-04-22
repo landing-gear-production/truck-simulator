@@ -17,8 +17,8 @@ void setup() {
   pinMode(IGNITION_PIN, INPUT_PULLDOWN);
   pinMode(START_PIN, INPUT_PULLDOWN);
 
-  attachInterrupt(digitalPinToInterrupt(HORN_PIN), setHornFalse, FALLING);
-  attachInterrupt(digitalPinToInterrupt(HORN_PIN), setHornTrue, RISING);
+  attachInterrupt(digitalPinToInterrupt(HORN_PIN), setHorn, CHANGE);
+  // attachInterrupt(digitalPinToInterrupt(HORN_PIN), setHornTrue, RISING);
   attachInterrupt(digitalPinToInterrupt(START_PIN), setEngineLast, RISING);
   attachInterrupt(digitalPinToInterrupt(IGNITION_PIN), setEngineLast, FALLING);
 
@@ -192,11 +192,12 @@ void notifyClients()
   doc["input"]["brake"] = state.brakePedalPosition;
   doc["input"]["transmission"] = state.transmission;
   doc["input"]["horn"] = hornMessage;
-  doc["input"]["engine"] = engineMessage;
+  doc["input"]["ignition"] = engineMessage;
   doc["sensors"]["brake"] = rawBrakePedal.get();
   doc["sensors"]["accelerator"] = rawAcceleratorPedal.get();
   doc["sensors"]["transmission"] = rawTransmissionShifter.get();
   doc["sensors"]["steering"] = state.steeringWheelAngle;
+  doc["sensors"]["horn"] = horn;
   doc["errors"]["brake"] = brakeSensorError;
   doc["ranges"]["brake_min"] = minBrake;
   doc["ranges"]["brake_max"] = maxBrake;
@@ -275,14 +276,9 @@ void handleWebSocketMessage(void *arg, uint8_t *data, size_t len)
   }
 }
 
-void setHornTrue()
+void setHorn()
 {
-  horn = true;
-}
-
-void setHornFalse()
-{
-  horn = false;
+  horn = !digitalRead(HORN_PIN);
 }
 
 void setEngineLast()

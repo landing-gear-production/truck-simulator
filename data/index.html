@@ -26,7 +26,7 @@
       <div class="grow min-w-96 self-center">
         <div class="flex flex-col justify-stretch">
           <h2 class="text-2xl font-bold">Sensor ranges</h2>
-          <label for="steering_range" class="self-center">Steering</label>
+          <label for="steering_range" class="self-center font-bold">Steering</label>
           <div class="relative rounded-md shadow-sm my-2">
             <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
               <span class="text-gray-500 sm:text-sm">Range</span>
@@ -45,7 +45,7 @@
             </div>
             <input type="range" min="0.25" max="15.0" step="0.05" name="steering_scale" id="steering_scale" class="block w-full rounded-md border-0 py-1.5 pl-20 pr-2 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm" placeholder="1.0" oninput="updateSteeringScale(this.value)" onchange="updateSteeringScale(this.value)">
           </div>
-          <label for="brake_range" class="self-center">Brakes</label>
+          <label for="brake_range" class="self-center font-bold">Brakes</label>
           <div class="relative rounded-md shadow-sm my-2">
             <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
               <span class="text-gray-500 sm:text-sm">Min</span>
@@ -58,7 +58,7 @@
             </div>
             <input type="number" name="brake_max" id="brake_max" class="block w-full rounded-md border-0 py-1.5 pl-20 pr-2 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm" placeholder="0">
           </div>
-          <label for="accelerator_range" class="self-center">Accelerator</label>
+          <label for="accelerator_range" class="self-center font-bold">Accelerator</label>
           <div class="relative mt-2 rounded-md shadow-sm my-2">
             <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
               <span class="text-gray-500 sm:text-sm">Min</span>
@@ -71,7 +71,7 @@
             </div>
             <input type="number" name="accelerator_max" id="accelerator_max" class="block w-full rounded-md border-0 py-1.5 pl-20 pr-2 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm" placeholder="0">
           </div>
-          <label for="transmission_thresholds" class="self-center">Transmission</label>
+          <label for="transmission_thresholds" class="self-center font-bold">Transmission</label>
           <div class="relative rounded-md shadow-sm my-2">
             <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
               <span class="text-gray-500 sm:text-sm">Reverse</span>
@@ -97,35 +97,41 @@
         <div>
           <div class="mb-2 flex flex-col justify-stretch">
             <h2 class="text-2xl font-bold">Raw Data</h2>
-            <label for="steering" class="self-center">Steering</label>
+            <label for="steering" class="self-center font-bold">Steering</label>
             <p id="raw_steering" class="self-center"></p>
-            <label for="brakes" class="self-center">Brakes</label>
+            <label for="brakes" class="self-center font-bold">Brakes</label>
             <p id="raw_brake" class="self-center"></p>
-            <label for="accelerator" class="self-center">Accelerator</label>
+            <label for="accelerator" class="self-center font-bold">Accelerator</label>
             <p id="raw_accelerator" class="self-center"></p>
-            <label for="accelerator" class="self-center">Transmission</label>
+            <label for="transmission" class="self-center font-bold">Transmission</label>
             <p id="raw_transmission" class="self-center"></p>
+            <label for="horn" class="self-center font-bold">Horn</label>
+            <p id="raw_horn" class="self-center"></p>
           </div>
 
           <div class="flex flex-col justify-stretch">
             <h2 class="text-2xl font-bold">Game Inputs</h2>
-            <label for="steering" class="self-center">Steering</label>
-            <p id="steering_value"></p>
+            <label for="steering" class="self-center font-bold">Steering</label>
+            <p id="steering_value" class="self-center"></p>
             <div class="border-slate-300 border rounded-md h-4 my-2 flex relative">
               <div id="steering" class="bg-orange-300 border rounded-md absolute" style="top: 0; bottom: 0; left:50%;" role="progressbar"></div>
             </div>
-            <label for="brakes" class="self-center">Brakes</label>
+            <label for="brakes" class="self-center font-bold">Brakes</label>
             <p id="brakes_value" class="self-center"></p>
             <div class="border-slate-300 border rounded-md h-4 my-2 flex relative">
               <div id="brakes" class="bg-red-300 border rounded-md" role="progressbar"></div>
             </div>
-            <label for="accelerator" class="self-center">Accelerator</label>
+            <label for="accelerator" class="self-center font-bold">Accelerator</label>
             <p id="accelerator_value" class="self-center"></p>
             <div class="border-slate-300 border rounded-md h-4 my-2 flex relative">
               <div id="accelerator" class="bg-blue-300 border rounded-md" role="progressbar"></div>
             </div>
-            <label for="accelerator" class="self-center">Transmission</label>
+            <label for="accelerator" class="self-center font-bold">Transmission</label>
             <p id="transmission" class="self-center"></p>
+            <label for="horn" class="self-center font-bold">Horn</label>
+            <p id="horn" class="self-center"></p>
+            <label for="accelerator" class="self-center font-bold">Ignition</label>
+            <p id="ignition" class="self-center"></p>
           </div>
 
           <div class="my-2">

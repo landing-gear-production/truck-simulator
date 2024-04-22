@@ -55,8 +55,7 @@ float smoothedTransmissionShifter;
 
 bool horn = false;
 uint32_t hornMessage;
-void setHornFalse();
-void setHornTrue();
+void setHorn();
 
 uint32_t engineMessage;
 void setEngineLast();

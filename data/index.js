@@ -84,11 +84,11 @@ function onMessage(event) {
 
 function updateData(data) {
   Object.keys(data.sensors).map((key) => {
-  var value = data.sensors[key];
-  var element = document.getElementById(`raw_${key}`);
+    var value = data.sensors[key];
+    var element = document.getElementById(`raw_${key}`);
 
-  if (element)
-    element.innerText = value;
+    if (element)
+      element.innerText = value;
   })
 
   Object.keys(data.input).map((key) => {
@@ -107,19 +107,21 @@ function updateData(data) {
       case 'transmission':
         updateTransmission(value)
         break
+      default:
+        document.getElementById(key).innerText = value
     }
   })
 
   if (updateRanges) {
     Object.keys(data.ranges).map((key) => {
-    var value = data.ranges[key];
-    var input = document.getElementById(key);
-    if (input) {
-      input.value = value;
-      if (key === 'steering_scale') {
-        document.getElementById('steering_scale_label').innerText = `Scale: ${value.toFixed(2)}`
+      var value = data.ranges[key];
+      var input = document.getElementById(key);
+      if (input) {
+        input.value = value;
+        if (key === 'steering_scale') {
+          document.getElementById('steering_scale_label').innerText = `Scale: ${value.toFixed(2)}`
+        }
       }
-    }
   })
 
     document.getElementById('ssid').value = data.wifi.ssid

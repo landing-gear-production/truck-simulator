@@ -4,6 +4,32 @@ var websocket;
 var updateRanges = true
 var editMode = false
 
+var lastCall = 0
+const callBuffer = 20
+
+const fakeData = {
+  sensors: {
+    steering: 10,
+    brake: 10,
+    accelerator: 30,
+    transmission: 2,
+    horn: 1,
+    ignition: 1,
+  },
+  input: {
+    steering: 10,
+    brake: 10,
+    accelerator: 30,
+    transmission: 2,
+    horn: 1,
+    ignition: 1,
+  },
+  wifi: {
+    ssid: "dfwfe",
+    password: "dwe"
+  }
+}
+
 // ----------------------------------------------------------------------------
 // Initialization
 // ----------------------------------------------------------------------------
@@ -15,21 +41,36 @@ function onLoad(event) {
 }
 
 // ----------------------------------------------------------------------------
+// Loop Fake Data
+// ----------------------------------------------------------------------------
+
+
+tick = () => {
+  updateData(fakeData)
+  // updateSteeringProgress(60)
+  // updateBrakeProgress(60)
+  // updateAcceleratorProgress(60)
+  // updateTransmission(2)
+}
+
+// setInterval(tick, 50)
+
+// ----------------------------------------------------------------------------
 // WebSocket handling
 // ----------------------------------------------------------------------------
 
 function toggleButton(id, disabled) {
-    const button = document.getElementById(id)
-    button.disabled = disabled
-    if (disabled) {
-      button.classList.remove('bg-blue-500')
-      button.classList.remove('hover:bg-blue-700')
-      button.classList.add('bg-blue-100')
-    } else {
-      button.classList.remove('bg-blue-100')
-      button.classList.add('bg-blue-500')
-      button.classList.add('hover:bg-blue-700')
-    }
+  const button = document.getElementById(id)
+  button.disabled = disabled
+  if (disabled) {
+    button.classList.remove('bg-blue-500')
+    button.classList.remove('hover:bg-blue-700')
+    button.classList.add('bg-blue-100')
+  } else {
+    button.classList.remove('bg-blue-100')
+    button.classList.add('bg-blue-500')
+    button.classList.add('hover:bg-blue-700')
+  }
 }
 
 function toggleEditMode() {
@@ -51,7 +92,7 @@ function toggleEditMode() {
 function initWebSocket() {
   console.log('Trying to open a WebSocket connection...');
   websocket = new WebSocket(gateway);
-  websocket.onopen  = onOpen;
+  websocket.onopen = onOpen;
   websocket.onclose = onClose;
   websocket.onmessage = onMessage;
 }
@@ -122,7 +163,7 @@ function updateData(data) {
           document.getElementById('steering_scale_label').innerText = `Scale: ${value.toFixed(2)}`
         }
       }
-  })
+    })
 
     document.getElementById('ssid').value = data.wifi.ssid
     document.getElementById('password').value = data.wifi.password
@@ -140,7 +181,7 @@ function updateSensorRanges() {
     data[key] = parseFloat(input.value);
   })
 
-  websocket.send(JSON.stringify({action: 'setRanges', data: data}))
+  websocket.send(JSON.stringify({ action: 'setRanges', data: data }))
 
   setTimeout(() => {
     updateRanges = true
@@ -152,7 +193,7 @@ function updateWiFi() {
     ssid: document.getElementById('ssid').value,
     password: document.getElementById('password').value
   }
-  websocket.send(JSON.stringify({action: 'setWiFi', data: data}))
+  websocket.send(JSON.stringify({ action: 'setWiFi', data: data }))
 
   setTimeout(() => {
     updateRanges = true

@@ -68,6 +68,7 @@ void loop() {
   neopixelWrite(LED_PIN, (!started || !receivingData) ? 127 : 0, receivingData ? 127 : 0, connected ? 127 : 0);
   auto now = millis();
 
+  // printf("Steering offset: %.2f\n");
   double constrainedScaledSteeringAngle = constrain((state.steeringWheelAngle + steeringOffset)* steeringScale, -steeringRange, steeringRange);
   gameState.steering = static_cast<int16_t>(map(static_cast<long>(constrainedScaledSteeringAngle), -steeringRange, steeringRange, -32767, 32767));
   gameState.accelerator = static_cast<int16_t>(map(state.acceleratorPedalPosition, 0, 100, 0, 32767));
@@ -76,7 +77,10 @@ void loop() {
 
   if (now - lastPrint >= PRINT_PERIOD) {
     ws.cleanupClients();
-    notifyClients();
+
+    if (connectedClients > 0)
+      notifyClients();
+
     lastPrint = now;
   }
 
@@ -143,6 +147,7 @@ void initSPIFFS() {
     reverseThreshold = document["reverse_threshold"];
     driveThreshold = document["drive_threshold"];
     lowThreshold = document["low_threshold"];
+    steeringOffset = document["steering_offset"];
   }
 }
 
@@ -250,6 +255,7 @@ void handleWebSocketMessage(void *arg, uint8_t *data, size_t len)
       driveThreshold = json["data"]["drive_threshold"].as<long>();;
       lowThreshold = json["data"]["low_threshold"].as<long>();;
       steeringOffset = json["data"]["steering_offset"].as<double>();;
+      printf("Steering offset: %.f/n, steeringOffset");
 
       auto file = SPIFFS.open("/config.json", FILE_WRITE);
       if (file)
@@ -304,9 +310,11 @@ void onEvent(
   {
   case WS_EVT_CONNECT:
     Serial.printf("WebSocket client #%u connected from %s\n", client->id(), client->remoteIP().toString().c_str());
+    connectedClients++;
     break;
   case WS_EVT_DISCONNECT:
     Serial.printf("WebSocket client #%u disconnected\n", client->id());
+    connectedClients--;
     break;
   case WS_EVT_DATA:
     handleWebSocketMessage(arg, data, len);

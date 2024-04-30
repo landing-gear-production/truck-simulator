@@ -38,6 +38,8 @@
 long steeringRange, minBrake, maxBrake, minAccelerator, maxAccelerator, reverseThreshold, driveThreshold, lowThreshold;
 double steeringScale = 1.0f;
 
+size_t connectedClients = 0;
+
 void onData(twai_message_t *message);
 void setupCAN();
 unsigned long lastGamepadUpdate = millis();

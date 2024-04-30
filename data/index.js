@@ -168,6 +168,9 @@ function updateData(data) {
         if (key === 'steering_scale') {
           document.getElementById('steering_scale_label').innerText = `Scale: ${value.toFixed(2)}`
         }
+        if (key === 'steering_offset') {
+          console.log('updating steering_offset', value)
+        }
         // if ( key === "steering_offset") {
         //   document.getElementById('steering_offset').value = value.toFixed(2)
         // }
@@ -222,7 +225,7 @@ function updateSteeringProgress(value) {
   if (value < 0) {
     element.style.right = '50%';
     element.style.left = `${parent.clientWidth - pixelOffset}px`
-    console.log(parent.clientWidth, pixelOffset)
+    // console.log(parent.clientWidth, pixelOffset)
   } else {
     element.style.left = '50%';
     element.style.right = `${pixelOffset}px`

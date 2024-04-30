@@ -53,7 +53,13 @@ tick = () => {
   // updateTransmission(2)
 }
 
-// setInterval(tick, 50)
+function toggleFakeData(enable) {
+  if (enable) {
+    setInterval(tick, 50)
+  }
+}
+
+toggleFakeData(false)
 
 // ----------------------------------------------------------------------------
 // WebSocket handling
@@ -162,6 +168,9 @@ function updateData(data) {
         if (key === 'steering_scale') {
           document.getElementById('steering_scale_label').innerText = `Scale: ${value.toFixed(2)}`
         }
+        // if ( key === "steering_offset") {
+        //   document.getElementById('steering_offset').value = value.toFixed(2)
+        // }
       }
     })
 

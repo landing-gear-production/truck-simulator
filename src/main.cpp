@@ -207,6 +207,7 @@ void notifyClients()
   doc["ranges"]["reverse_threshold"] = reverseThreshold;
   doc["ranges"]["drive_threshold"] = driveThreshold;
   doc["ranges"]["low_threshold"] = lowThreshold;
+  doc["ranges"]["steering_offset"] = steeringOffset;
   doc["wifi"]["ssid"] = ssid;
   doc["wifi"]["password"] = password;
 

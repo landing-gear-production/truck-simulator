@@ -175,7 +175,7 @@ function updateData(data) {
 
 function updateSensorRanges() {
   var data = {};
-  const keys = ['steering_range', 'steering_scale', 'accelerator_min', 'accelerator_max', 'brake_min', 'brake_max', 'reverse_threshold', 'low_threshold', 'drive_threshold']
+  const keys = ['steering_range', 'steering_scale', 'accelerator_min', 'accelerator_max', 'brake_min', 'brake_max', 'reverse_threshold', 'low_threshold', 'drive_threshold', 'steering_offset']
   keys.map((key) => {
     var input = document.getElementById(key);
     data[key] = parseFloat(input.value);

@@ -52,6 +52,7 @@ uint8_t steeringSamples;
 bool steeringInitialized;
 float smoothedAcceleratorPedal;
 float smoothedTransmissionShifter;
+double steeringOffset = 0.0;
 
 bool horn = false;
 uint32_t hornMessage;

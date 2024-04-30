@@ -68,7 +68,7 @@ void loop() {
   neopixelWrite(LED_PIN, (!started || !receivingData) ? 127 : 0, receivingData ? 127 : 0, connected ? 127 : 0);
   auto now = millis();
 
-  double constrainedScaledSteeringAngle = constrain(state.steeringWheelAngle * steeringScale, -steeringRange, steeringRange);
+  double constrainedScaledSteeringAngle = constrain((state.steeringWheelAngle + steeringOffset)* steeringScale, -steeringRange, steeringRange);
   gameState.steering = static_cast<int16_t>(map(static_cast<long>(constrainedScaledSteeringAngle), -steeringRange, steeringRange, -32767, 32767));
   gameState.accelerator = static_cast<int16_t>(map(state.acceleratorPedalPosition, 0, 100, 0, 32767));
   gameState.brake = static_cast<int16_t>(map(state.brakePedalPosition, 0, 100, 0, 32767));
@@ -248,6 +248,7 @@ void handleWebSocketMessage(void *arg, uint8_t *data, size_t len)
       reverseThreshold = json["data"]["reverse_threshold"].as<long>();;
       driveThreshold = json["data"]["drive_threshold"].as<long>();;
       lowThreshold = json["data"]["low_threshold"].as<long>();;
+      steeringOffset = json["data"]["steering_offset"].as<double>();;
 
       auto file = SPIFFS.open("/config.json", FILE_WRITE);
       if (file)

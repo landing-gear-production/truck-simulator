@@ -45,7 +45,7 @@ void setupCAN();
 unsigned long lastGamepadUpdate = millis();
 unsigned long lastPrint = millis();
 unsigned long PRINT_PERIOD = 100;
-unsigned long UPDATE_PERIOD = 10;
+unsigned long UPDATE_PERIOD = 15;
 MovingAverage <uint16_t, 64> rawAcceleratorPedal;
 MovingAverage <uint16_t, 64> rawTransmissionShifter;
 MovingAverage <uint8_t, 64> rawBrakePedal;
@@ -85,6 +85,7 @@ static bool started = false, receivingData = false, connected;
 bool startupError = false;
 bool brakeSensorError = false;
 bool wifiConnected = false;
+// unsigned long lastSteeringUpdate = millis();
 
 USBHIDVehicleGamepad gamepad;
 

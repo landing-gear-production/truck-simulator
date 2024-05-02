@@ -1,7 +1,8 @@
 #include "main.h"
 
-void setup() {
-  Serial.begin(115200); 
+void setup()
+{
+  Serial.begin(115200);
   lidarI2C.begin(LIDAR_SDA, LIDAR_SCL);
   gamepad.begin();
   USB.productName("Freightliner Cascadia");
@@ -18,21 +19,21 @@ void setup() {
   pinMode(START_PIN, INPUT_PULLDOWN);
 
   attachInterrupt(digitalPinToInterrupt(HORN_PIN), setHorn, CHANGE);
-  // attachInterrupt(digitalPinToInterrupt(HORN_PIN), setHornTrue, RISING);
   attachInterrupt(digitalPinToInterrupt(START_PIN), setEngineLast, RISING);
   attachInterrupt(digitalPinToInterrupt(IGNITION_PIN), setEngineLast, FALLING);
 
   xTaskCreatePinnedToCore(canTask, "canTask", 4096, NULL, 10, NULL, 1);
-  xTaskCreatePinnedToCore(brakeTask, "brakeTask", 4096, NULL, 10, NULL, 1);
+  xTaskCreatePinnedToCore(brakeTask, "brakeTask", 4096, NULL, 1, NULL, 1);
 }
 
-void loop() {
+void loop()
+{
   rawTransmissionShifter.add(analogRead(TRANSMISSION_SHIFTER_PIN));
 
   rawAcceleratorPedal.add(analogRead(ACCELERATOR_PEDAL_PIN));
   long constrainedAcceleratorPedalPosition = constrain(rawAcceleratorPedal.get(), minAccelerator, maxAccelerator);
   state.acceleratorPedalPosition = map(constrainedAcceleratorPedalPosition, minAccelerator, maxAccelerator, 0, 100);
-    
+
   // printf("%d\n", rawBrakePedal.get());
   long constrainedBrakePedalPosition = constrain(rawBrakePedal.get(), minBrake, maxBrake);
   state.brakePedalPosition = 100 - map(constrainedBrakePedalPosition, minBrake, maxBrake, 0, 100);
@@ -59,23 +60,23 @@ void loop() {
   hornMessage = horn ? 0x10 : 0x00;
 
   engineMessage = 0x00;
-  if (millis() - lastEngine <= engineLength)
+  auto now = millis();
+  if (now - lastEngine <= engineLength)
   {
     engineMessage = 0x20;
   }
 
   memcpy(&oldState, &state, sizeof(VehicleState));
   neopixelWrite(LED_PIN, (!started || !receivingData) ? 127 : 0, receivingData ? 127 : 0, connected ? 127 : 0);
-  auto now = millis();
 
-  // printf("Steering offset: %.2f\n");
-  double constrainedScaledSteeringAngle = constrain((state.steeringWheelAngle + steeringOffset)* steeringScale, -steeringRange, steeringRange);
+  double constrainedScaledSteeringAngle = constrain((state.steeringWheelAngle + steeringOffset) * steeringScale, -steeringRange, steeringRange);
   gameState.steering = static_cast<int16_t>(map(static_cast<long>(constrainedScaledSteeringAngle), -steeringRange, steeringRange, -32767, 32767));
   gameState.accelerator = static_cast<int16_t>(map(state.acceleratorPedalPosition, 0, 100, 0, 32767));
   gameState.brake = static_cast<int16_t>(map(state.brakePedalPosition, 0, 100, 0, 32767));
   gameState.buttons = state.transmission | hornMessage | engineMessage;
 
-  if (now - lastPrint >= PRINT_PERIOD) {
+  if (now - lastPrint >= PRINT_PERIOD)
+  {
     ws.cleanupClients();
 
     if (connectedClients > 0)
@@ -84,26 +85,32 @@ void loop() {
     lastPrint = now;
   }
 
-  gamepad.send(
-    0, 0,
-    gameState.steering,
-    0,
-    gameState.accelerator,
-    gameState.brake,
-    0, gameState.buttons
-  );
+  if (now - lastGamepadUpdate >= UPDATE_PERIOD)
+  {
+    gamepad.send(
+        0, 0,
+        gameState.steering,
+        0,
+        gameState.accelerator,
+        gameState.brake,
+        0, gameState.buttons);
+    
+    lastGamepadUpdate = now;
+  }
 
   // if (now - lastPrint > PRINT_PERIOD) {
-    // printf("Steering: %.2f, %ld, %ld\n", state.steeringWheelAngle, static_cast<int16_t>(state.steeringWheelAngle), gameState.steering);
-    // printf("accelerator: %d, brake: %d, steering: %d\n", gameAccelerator, gameBrake, gameSteeringAngle);
-    // printf("Brake: %d, Accelerator: %d, Steering: %f, Current Gear: %d\n", state.brakePedalPosition, state.acceleratorPedalPosition, state.steeringWheelAngle, state.transmission);
-    // lastPrint = now;
+  // printf("Steering: %.2f, %ld, %ld\n", state.steeringWheelAngle, static_cast<int16_t>(state.steeringWheelAngle), gameState.steering);
+  // printf("accelerator: %d, brake: %d, steering: %d\n", gameAccelerator, gameBrake, gameSteeringAngle);
+  // printf("Brake: %d, Accelerator: %d, Steering: %f, Current Gear: %d\n", state.brakePedalPosition, state.acceleratorPedalPosition, state.steeringWheelAngle, state.transmission);
+  // lastPrint = now;
   // }
   // }
 }
 
-void errorLoop() {
-  while (true) {
+void errorLoop()
+{
+  while (true)
+  {
     neopixelWrite(LED_PIN, 127, 0, 0);
     delay(100);
     neopixelWrite(LED_PIN, 0, 0, 0);
@@ -111,8 +118,10 @@ void errorLoop() {
   }
 }
 
-void initSPIFFS() {
-  if (!SPIFFS.begin()) {
+void initSPIFFS()
+{
+  if (!SPIFFS.begin())
+  {
     Serial.println("Cannot mount SPIFFS volume...");
     errorLoop();
     startupError = true;
@@ -151,10 +160,12 @@ void initSPIFFS() {
   }
 }
 
-void initWiFi() {
+void initWiFi()
+{
   WiFi.softAP(ssid.c_str(), password.c_str());
 
-  if (!MDNS.begin("cascadia")) {
+  if (!MDNS.begin("cascadia"))
+  {
     Serial.println("Error setting up MDNS responder!");
     errorLoop();
     startupError = true;
@@ -192,7 +203,7 @@ void notifyClients()
 {
   JsonDocument doc;
   doc["type"] = "data";
-  doc["input"]["steering"] = state.steeringWheelAngle * steeringScale;
+  doc["input"]["steering"] = constrain((state.steeringWheelAngle + steeringOffset) * steeringScale, -steeringRange, steeringRange);
   doc["input"]["accelerator"] = state.acceleratorPedalPosition;
   doc["input"]["brake"] = state.brakePedalPosition;
   doc["input"]["transmission"] = state.transmission;
@@ -208,6 +219,7 @@ void notifyClients()
   doc["ranges"]["brake_max"] = maxBrake;
   doc["ranges"]["accelerator_min"] = minAccelerator;
   doc["ranges"]["accelerator_max"] = maxAccelerator;
+  doc["ranges"]["steering_scale"] = steeringScale;
   doc["ranges"]["steering_range"] = steeringRange;
   doc["ranges"]["reverse_threshold"] = reverseThreshold;
   doc["ranges"]["drive_threshold"] = driveThreshold;
@@ -223,6 +235,7 @@ void notifyClients()
 
 void handleWebSocketMessage(void *arg, uint8_t *data, size_t len)
 {
+  printf("Updated\n");
   AwsFrameInfo *info = (AwsFrameInfo *)arg;
   if (info->final && info->index == 0 && info->len == len && info->opcode == WS_TEXT)
   {
@@ -244,18 +257,16 @@ void handleWebSocketMessage(void *arg, uint8_t *data, size_t len)
     }
     else if (strcmp(action, "setRanges") == 0)
     {
-      Serial.printf("Setting ranges\n");
       steeringRange = json["data"]["steering_range"].as<long>();
       steeringScale = json["data"]["steering_scale"].as<double>();
-      minBrake = json["data"]["brake_min"].as<long>();;
-      maxBrake = json["data"]["brake_max"].as<long>();;
-      minAccelerator = json["data"]["accelerator_min"].as<long>();;
-      maxAccelerator = json["data"]["accelerator_max"].as<long>();;
-      reverseThreshold = json["data"]["reverse_threshold"].as<long>();;
-      driveThreshold = json["data"]["drive_threshold"].as<long>();;
-      lowThreshold = json["data"]["low_threshold"].as<long>();;
-      steeringOffset = json["data"]["steering_offset"].as<double>();;
-      printf("Steering offset: %.f/n, steeringOffset");
+      steeringOffset = json["data"]["steering_offset"].as<double>();
+      minBrake = json["data"]["brake_min"].as<long>();
+      maxBrake = json["data"]["brake_max"].as<long>();
+      minAccelerator = json["data"]["accelerator_min"].as<long>();
+      maxAccelerator = json["data"]["accelerator_max"].as<long>();
+      reverseThreshold = json["data"]["reverse_threshold"].as<long>();
+      driveThreshold = json["data"]["drive_threshold"].as<long>();
+      lowThreshold = json["data"]["low_threshold"].as<long>();
 
       auto file = SPIFFS.open("/config.json", FILE_WRITE);
       if (file)
@@ -324,26 +335,33 @@ void onEvent(
   }
 }
 
-void setupCAN() {
+void setupCAN()
+{
   twai_general_config_t g_config = TWAI_GENERAL_CONFIG_DEFAULT(CAN_TX_PIN, CAN_RX_PIN, TWAI_MODE_NORMAL);
   twai_timing_config_t t_config = TWAI_TIMING_CONFIG_500KBITS();
   twai_filter_config_t f_config = TWAI_FILTER_CONFIG_ACCEPT_ALL();
 
-  //Install TWAI driver
-  if (twai_driver_install(&g_config, &t_config, &f_config) == ESP_OK) {
+  // Install TWAI driver
+  if (twai_driver_install(&g_config, &t_config, &f_config) == ESP_OK)
+  {
     printf("Driver installed\n");
     started = true;
-  } else {
+  }
+  else
+  {
     printf("Failed to install driver\n");
     started = false;
     return;
   }
 
-  //Start TWAI driver
-  if (twai_start() == ESP_OK) {
+  // Start TWAI driver
+  if (twai_start() == ESP_OK)
+  {
     printf("Driver started\n");
     started = true;
-  } else {
+  }
+  else
+  {
     printf("Failed to start driver\n");
     started = false;
     return;
@@ -352,13 +370,17 @@ void setupCAN() {
   neopixelWrite(LED_PIN, !started ? 127 : 0, receivingData ? 127 : 0, 0);
 }
 
-SteeringDirection getSteeringDirection(float last, float current) {
-  if (last - current < 0) return SteeringDirection::Increasing;
-  else if (last - current > 0) return SteeringDirection::Decreasing;
+SteeringDirection getSteeringDirection(float last, float current)
+{
+  if (last - current < 0)
+    return SteeringDirection::Increasing;
+  else if (last - current > 0)
+    return SteeringDirection::Decreasing;
   return SteeringDirection::DirectionUnknown;
 }
 
-void onData(twai_message_t *message) {
+void onData(twai_message_t *message)
+{
   // all J1939 frames are extended
   if (!message->extd)
     return;
@@ -374,106 +396,129 @@ void onData(twai_message_t *message) {
   //   printf("%02x ", message->data[i]);
   // printf("\n");
 
-  switch (header.pgn) {
-    case 61441:
-      // printf("%d\t", message->identifier);
-      // for (int i = 0; i < message->data_length_code; i++)
-      //   printf("%02x ", message->data[i]);
-      // printf("\n");
-      // brake pedal position - too inconsistent on the Cascadia when brake air pressure is low 
-      // if (message->identifier == 0x18f0010b)
-      //   state.brakePedalPosition = message->data[1];
-      break;
-    case 61443:
-      // accelerator pedal position - too inconsistent on the Cascadia
-      // state.acceleratorPedalPosition = message->data[1];
-      break;
-    case 61445:
-      // extract transmission information - too inconsistent on the Cascadia
-      // printf("%d\t", header.pgn);
-      // for (int i = 0; i < message->data_length_code; i++)
-      //   printf("%02x ", message->data[i]);
-      // printf("\n");
-      // gear = message->data[5];
-      // switch (gear) {
-      //   case 'R':
-      //     state.transmission = Reverse;
-      //     break;
-      //   case 'N':
-      //     state.transmission = Neutral;
-      //     break;
-      //   case 'D':
-      //     state.transmission = Drive;
-      //     break;
-      //   case 'L':
-      //     state.transmission = Low;
-      //     break;
-      // }
-      // break;
-    case 61449:
-      rawAngle = (static_cast<uint16_t>(message->data[1]) << 8) | message->data[0];
-      radians = static_cast<double>(rawAngle) / 1024.0 - 31.374;
-      degs = radians * 180.0 / PI;
+  switch (header.pgn)
+  {
+  case 61441:
+    // printf("%d\t", message->identifier);
+    // for (int i = 0; i < message->data_length_code; i++)
+    //   printf("%02x ", message->data[i]);
+    // printf("\n");
+    // brake pedal position - too inconsistent on the Cascadia when brake air pressure is low
+    // if (message->identifier == 0x18f0010b)
+    //   state.brakePedalPosition = message->data[1];
+    break;
+  case 61443:
+    // accelerator pedal position - too inconsistent on the Cascadia
+    // state.acceleratorPedalPosition = message->data[1];
+    break;
+  case 61445:
+    // extract transmission information - too inconsistent on the Cascadia
+    // printf("%d\t", header.pgn);
+    // for (int i = 0; i < message->data_length_code; i++)
+    //   printf("%02x ", message->data[i]);
+    // printf("\n");
+    // gear = message->data[5];
+    // switch (gear) {
+    //   case 'R':
+    //     state.transmission = Reverse;
+    //     break;
+    //   case 'N':
+    //     state.transmission = Neutral;
+    //     break;
+    //   case 'D':
+    //     state.transmission = Drive;
+    //     break;
+    //   case 'L':
+    //     state.transmission = Low;
+    //     break;
+    // }
+    // break;
+  case 61449:
+    rawAngle = (static_cast<uint16_t>(message->data[1]) << 8) | message->data[0];
+    radians = static_cast<double>(rawAngle) / 1024.0 - 31.374;
+    degs = radians * 180.0 / PI;
 
-      // all of this hackiness due to rollover issues in the Cascadia steering reports
-      // data jumps at around 740 degrees (maybe a parsing issue)?
-      if (degs >= -steeringRange && degs <= steeringRange) {
-        // if (state.steeringWheelAngle == 0 )
-        if (!steeringInitialized) {
-          lastSteering[steeringSamples] = degs;
-          steeringSamples++;
-          if (steeringSamples == 2) {
-            steeringInitialized = true;
-            state.steeringWheelAngle = degs;
-          }
+    // all of this hackiness due to rollover issues in the Cascadia steering reports
+    // data jumps at around 740 degrees (maybe a parsing issue)?
+    if (degs >= -steeringRange && degs <= steeringRange)
+    {
+      // if (state.steeringWheelAngle == 0 )
+      if (!steeringInitialized)
+      {
+        lastSteering[steeringSamples] = degs;
+        steeringSamples++;
+        if (steeringSamples == 2)
+        {
+          steeringInitialized = true;
+          state.steeringWheelAngle = degs;
         }
-        else {
-          SteeringDirection lastDirection = getSteeringDirection(lastSteering[0], lastSteering[1]);
-          SteeringDirection nextDirection = getSteeringDirection (lastSteering[1], degs);
+      }
+      else
+      {
+        SteeringDirection lastDirection = getSteeringDirection(lastSteering[0], lastSteering[1]);
+        SteeringDirection nextDirection = getSteeringDirection(lastSteering[1], degs);
 
-          if (nextDirection != SteeringDirection::DirectionUnknown && lastDirection != nextDirection) {
-            if (abs(lastSteering[1] - degs) < steeringRange) {
-              state.steeringWheelAngle = degs;
-              lastSteering[0] = lastSteering[1];
-              lastSteering[1] = degs;
-            }
-          }
-          else {
+        if (nextDirection != SteeringDirection::DirectionUnknown && lastDirection != nextDirection)
+        {
+          if (abs(lastSteering[1] - degs) < steeringRange)
+          {
             state.steeringWheelAngle = degs;
             lastSteering[0] = lastSteering[1];
             lastSteering[1] = degs;
+            // lastSteeringUpdate = millis();
           }
+        }
+        else
+        {
+          state.steeringWheelAngle = degs;
+          lastSteering[0] = lastSteering[1];
+          lastSteering[1] = degs;
+          // lastSteeringUpdate = millis();
+        }
       }
     }
+
+    // printf("Raw Degrees: %.2f, Final Angle: %.2f\n", degs, state.steeringWheelAngle);
     break;
   }
 }
 
-void canTask(void* args) {
+void canTask(void *args)
+{
   setupCAN();
 
-  for (;;) {
-    // oldFeedbackData = feedbackData;
-    twai_message_t message; 
+  auto now = millis();
 
-    if (twai_receive(&message, 100) == ESP_OK)
+  for (;;)
+  {
+    now = millis();
+    // oldFeedbackData = feedbackData;
+    twai_message_t message;
+
+    if (twai_receive(&message, 0) == ESP_OK)
     {
       receivingData = true;
       onData(&message);
     }
-    else {
+    else
+    {
       // printf("Failed to receive message\n");
       receivingData = false;
     }
 
-    delay(5);
+    // printf("Update Length: %lu\n", now - lastSteeringUpdate);
+    // lastSteeringUpdate = now;
+
+    delay(1);
   }
 
   vTaskDelete(NULL);
 }
 
-void brakeTask(void* args) {
-  if (!brakeSensor.begin(&lidarI2C)) {
+void brakeTask(void *args)
+{
+  if (!brakeSensor.begin(&lidarI2C))
+  {
     printf("Failed to init VL6180X\n");
     startupError = true;
     brakeSensorError = true;
@@ -481,11 +526,12 @@ void brakeTask(void* args) {
   else
     printf("Brake sensor initialized\n");
 
-  for (;;) {
+  for (;;)
+  {
     rawBrakePedal.add(brakeSensor.readRange());
     // printf("Brake pedal distance: %d, error; %s\n", rawBrakePedal.get(), brakeSensorError ? "true" : "false");
     // delay(95);
-    delay(5);
+    delay(10);
   }
 
   vTaskDelete(NULL);

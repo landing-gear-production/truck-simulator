@@ -38,12 +38,14 @@
 long steeringRange, minBrake, maxBrake, minAccelerator, maxAccelerator, reverseThreshold, driveThreshold, lowThreshold;
 double steeringScale = 1.0f;
 
+size_t connectedClients = 0;
+
 void onData(twai_message_t *message);
 void setupCAN();
 unsigned long lastGamepadUpdate = millis();
 unsigned long lastPrint = millis();
 unsigned long PRINT_PERIOD = 100;
-unsigned long UPDATE_PERIOD = 10;
+unsigned long UPDATE_PERIOD = 15;
 MovingAverage <uint16_t, 64> rawAcceleratorPedal;
 MovingAverage <uint16_t, 64> rawTransmissionShifter;
 MovingAverage <uint8_t, 64> rawBrakePedal;
@@ -52,6 +54,7 @@ uint8_t steeringSamples;
 bool steeringInitialized;
 float smoothedAcceleratorPedal;
 float smoothedTransmissionShifter;
+double steeringOffset = 0.0;
 
 bool horn = false;
 uint32_t hornMessage;
@@ -82,6 +85,7 @@ static bool started = false, receivingData = false, connected;
 bool startupError = false;
 bool brakeSensorError = false;
 bool wifiConnected = false;
+// unsigned long lastSteeringUpdate = millis();
 
 USBHIDVehicleGamepad gamepad;
 

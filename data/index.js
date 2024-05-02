@@ -4,6 +4,32 @@ var websocket;
 var updateRanges = true
 var editMode = false
 
+var lastCall = 0
+const callBuffer = 20
+
+const fakeData = {
+  sensors: {
+    steering: 10,
+    brake: 10,
+    accelerator: 30,
+    transmission: 2,
+    horn: 1,
+    ignition: 1,
+  },
+  input: {
+    steering: 10,
+    brake: 10,
+    accelerator: 30,
+    transmission: 2,
+    horn: 1,
+    ignition: 1,
+  },
+  wifi: {
+    ssid: "dfwfe",
+    password: "dwe"
+  }
+}
+
 // ----------------------------------------------------------------------------
 // Initialization
 // ----------------------------------------------------------------------------
@@ -15,21 +41,42 @@ function onLoad(event) {
 }
 
 // ----------------------------------------------------------------------------
+// Loop Fake Data
+// ----------------------------------------------------------------------------
+
+
+tick = () => {
+  updateData(fakeData)
+  // updateSteeringProgress(60)
+  // updateBrakeProgress(60)
+  // updateAcceleratorProgress(60)
+  // updateTransmission(2)
+}
+
+function toggleFakeData(enable) {
+  if (enable) {
+    setInterval(tick, 50)
+  }
+}
+
+toggleFakeData(false)
+
+// ----------------------------------------------------------------------------
 // WebSocket handling
 // ----------------------------------------------------------------------------
 
 function toggleButton(id, disabled) {
-    const button = document.getElementById(id)
-    button.disabled = disabled
-    if (disabled) {
-      button.classList.remove('bg-blue-500')
-      button.classList.remove('hover:bg-blue-700')
-      button.classList.add('bg-blue-100')
-    } else {
-      button.classList.remove('bg-blue-100')
-      button.classList.add('bg-blue-500')
-      button.classList.add('hover:bg-blue-700')
-    }
+  const button = document.getElementById(id)
+  button.disabled = disabled
+  if (disabled) {
+    button.classList.remove('bg-blue-500')
+    button.classList.remove('hover:bg-blue-700')
+    button.classList.add('bg-blue-100')
+  } else {
+    button.classList.remove('bg-blue-100')
+    button.classList.add('bg-blue-500')
+    button.classList.add('hover:bg-blue-700')
+  }
 }
 
 function toggleEditMode() {
@@ -51,7 +98,7 @@ function toggleEditMode() {
 function initWebSocket() {
   console.log('Trying to open a WebSocket connection...');
   websocket = new WebSocket(gateway);
-  websocket.onopen  = onOpen;
+  websocket.onopen = onOpen;
   websocket.onclose = onClose;
   websocket.onmessage = onMessage;
 }
@@ -121,8 +168,14 @@ function updateData(data) {
         if (key === 'steering_scale') {
           document.getElementById('steering_scale_label').innerText = `Scale: ${value.toFixed(2)}`
         }
+        if (key === 'steering_offset') {
+          console.log('updating steering_offset', value)
+        }
+        // if ( key === "steering_offset") {
+        //   document.getElementById('steering_offset').value = value.toFixed(2)
+        // }
       }
-  })
+    })
 
     document.getElementById('ssid').value = data.wifi.ssid
     document.getElementById('password').value = data.wifi.password
@@ -134,13 +187,13 @@ function updateData(data) {
 
 function updateSensorRanges() {
   var data = {};
-  const keys = ['steering_range', 'steering_scale', 'accelerator_min', 'accelerator_max', 'brake_min', 'brake_max', 'reverse_threshold', 'low_threshold', 'drive_threshold']
+  const keys = ['steering_range', 'steering_scale', 'accelerator_min', 'accelerator_max', 'brake_min', 'brake_max', 'reverse_threshold', 'low_threshold', 'drive_threshold', 'steering_offset']
   keys.map((key) => {
     var input = document.getElementById(key);
     data[key] = parseFloat(input.value);
   })
 
-  websocket.send(JSON.stringify({action: 'setRanges', data: data}))
+  websocket.send(JSON.stringify({ action: 'setRanges', data: data }))
 
   setTimeout(() => {
     updateRanges = true
@@ -152,7 +205,7 @@ function updateWiFi() {
     ssid: document.getElementById('ssid').value,
     password: document.getElementById('password').value
   }
-  websocket.send(JSON.stringify({action: 'setWiFi', data: data}))
+  websocket.send(JSON.stringify({ action: 'setWiFi', data: data }))
 
   setTimeout(() => {
     updateRanges = true
@@ -172,7 +225,7 @@ function updateSteeringProgress(value) {
   if (value < 0) {
     element.style.right = '50%';
     element.style.left = `${parent.clientWidth - pixelOffset}px`
-    console.log(parent.clientWidth, pixelOffset)
+    // console.log(parent.clientWidth, pixelOffset)
   } else {
     element.style.left = '50%';
     element.style.right = `${pixelOffset}px`
